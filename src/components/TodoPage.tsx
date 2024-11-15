@@ -2,32 +2,46 @@ import { Check, Delete } from '@mui/icons-material';
 import { Box, Button, Container, IconButton, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import useFetch from '../hooks/useFetch.ts';
+import useUiToast from '../hooks/useUiToast.ts';
 import { Task } from '../index';
 
 const TodoPage = () => {
   const api = useFetch();
+  const toast = useUiToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [modifiedTasks, setModifiedTasks] = useState<Record<number, boolean>>({});
 
   const handleFetchTasks = async () => setTasks(await api.get('/tasks'));
 
   const handleAdd = async () => {
-    await api.post(`/tasks`, { 'name': 'Name of Task' });
-    await handleFetchTasks();
-    toast.success(<p>Task has been created</p>);
+    const resp = await api.post(`/tasks`, { 'name': 'Name of Task' });
+    if (!resp.error) {
+      await handleFetchTasks();
+      toast.success(<p>Task has been created</p>);
+    } else {
+      toast.error(<p>{resp.message}</p>);
+    }
   }
 
   const handleDelete = async (id: number) => {
-    await api.delete(`/tasks/${id}`);
+    const resp = await api.delete(`/tasks/${id}`);
     await handleFetchTasks();
-    toast.success(<p>Task has been deleted</p>);
+    if (!resp.error) {
+      toast.success(<p>Task has been deleted</p>);
+    } else {
+      toast.error(<p>{resp.message}</p>);
+    }
   }
 
   const handleSave = async (id: number, name: string) => {
-    await api.patch(`/tasks/${id}`, { 'id': id, 'name': name });
-    await handleFetchTasks();
-    await handleChange(id, name);
-    toast.success(<p>Task has been updated</p>);
+    const resp = await api.patch(`/tasks/${id}`, { 'id': id, 'name': name });
+    if (!resp.error) {
+      await handleFetchTasks();
+      await handleChange(id, name);
+      toast.success(<p>Task has been updated</p>);
+    } else {
+      toast.error(<p>{resp.message}</p>);
+    }
   }
 
   const handleChange = async (id: number, name: string) => {
