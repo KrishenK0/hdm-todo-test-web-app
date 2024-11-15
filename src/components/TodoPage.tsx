@@ -1,5 +1,5 @@
-import { Check, Delete } from '@mui/icons-material';
-import { Box, Button, Container, IconButton, TextField, Typography } from '@mui/material';
+import { Add, Check, Delete, Remove } from '@mui/icons-material';
+import { Box, Button, Container, IconButton, LinearProgress, TextField, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import useFetch from '../hooks/useFetch.ts';
 import useUiToast from '../hooks/useUiToast.ts';
@@ -33,11 +33,11 @@ const TodoPage = () => {
     }
   }
 
-  const handleSave = async (id: number, name: string) => {
-    const resp = await api.patch(`/tasks/${id}`, { 'id': id, 'name': name });
+  const handleSave = async (task: Task) => {
+    const resp = await api.patch(`/tasks/${task.id}`, task);
     if (!resp.error) {
       await handleFetchTasks();
-      await handleChange(id, name);
+      await handleChange(task.id, task.name);
       toast.success(<p>Task has been updated</p>);
     } else {
       toast.error(<p>{resp.message}</p>);
@@ -45,14 +45,28 @@ const TodoPage = () => {
   }
 
   const handleChange = async (id: number, name: string) => {
-    setTasks((prevTasks) =>
+    await setTasks((prevTasks) =>
       prevTasks.map((task) => (task.id === id ? { ...task, name } : task))
     );
 
-    setModifiedTasks((prevModifiedTasks) => ({
+    await setModifiedTasks((prevModifiedTasks) => ({
       ...prevModifiedTasks,
       [id]: name !== tasks.find((task) => task.id === id)?.name,
     }));
+  }
+
+  const handleProgressChange = async (id: number, newProgress: number) => {
+    if (newProgress >= 0 && newProgress <= 100) {
+      var foundIndex = tasks.findIndex(x => x.id === id);
+      
+      await setModifiedTasks((prevModifiedTasks) => ({
+        ...prevModifiedTasks,
+        [id]: newProgress !== tasks[foundIndex].progress,
+      }));
+      tasks[foundIndex].progress = newProgress;
+
+      await setTasks([...tasks]);
+    }
   }
 
   useEffect(() => {
@@ -70,18 +84,32 @@ const TodoPage = () => {
       <Box justifyContent="center" mt={5} flexDirection="column">
         {
           tasks.map((task) => (
-            <Box key={task.id} display="flex" justifyContent="center" alignItems="center" mt={2} gap={1} width="100%">
-              <TextField onChange={(e) => handleChange(task.id, e.target.value)} size="small" value={task.name} fullWidth sx={{ maxWidth: 350 }} />
-              <Box>
-                <IconButton color="success"
-                  onClick={() => handleSave(task.id, task.name)}
-                  disabled={!modifiedTasks[task.id]}
-                >
-                  <Check />
-                </IconButton>
-                <IconButton color="error" onClick={() => handleDelete(task.id)}>
-                  <Delete />
-                </IconButton>
+            <Box key={task.id} display="flex" flexDirection="column" alignItems="center" mt={2} gap={1} width="100%">
+              <Box display="flex" justifyContent="center" alignItems="center" gap={1} width="100%">
+                <TextField onChange={(e) => handleChange(task.id, e.target.value)} size="small" value={task.name} fullWidth sx={{ maxWidth: 350 }} />
+                <Box>
+                  <IconButton color="success"
+                    onClick={() => handleSave(task)}
+                    disabled={!modifiedTasks[task.id]}
+                  >
+                    <Check />
+                  </IconButton>
+                  <IconButton color="error" onClick={() => handleDelete(task.id)}>
+                    <Delete />
+                  </IconButton>
+                </Box>
+              </Box>
+              <Box width="25%" sx={{ mt: 1 }}>
+                <LinearProgress variant="determinate" value={task.progress} />
+                <Box display="flex" justifyContent="space-between" mt={1}>
+                  <IconButton onClick={() => handleProgressChange(task.id, task.progress - 10)}>
+                    <Remove />
+                  </IconButton>
+                  <Typography>{task.progress}%</Typography>
+                  <IconButton onClick={() => handleProgressChange(task.id, task.progress + 10)}>
+                    <Add />
+                  </IconButton>
+                </Box>
               </Box>
             </Box>
           ))
