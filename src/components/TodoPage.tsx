@@ -13,6 +13,12 @@ const TodoPage = () => {
 
   const handleFetchTasks = async () => setTasks(await api.get('/tasks'));
 
+  const handleAdd = async () => {
+    await api.post(`/tasks`, { 'name': 'Name of Task' });
+    await handleFetchTasks();
+    toast.success(<p>Task has been created</p>);
+  }
+
   const handleDelete = async (id: number) => {
     await api.delete(`/tasks/${id}`);
     await handleFetchTasks();
@@ -54,7 +60,7 @@ const TodoPage = () => {
         }
 
         <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
-          <Button variant="outlined" onClick={() => {}}>Ajouter une tâche</Button>
+          <Button variant="outlined" onClick={() => handleAdd()}>Ajouter une tâche</Button>
         </Box>
       </Box>
     </Container>
